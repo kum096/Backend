@@ -59,7 +59,7 @@ async def update_shipment(db, tracking_number: str, update_data: Dict) -> Option
     return None
 
 
-async def get_all_shipments(db, skip: int = 0, limit: int = 100) -> List[dict]:
+async def get_all_shipments(db, skip: int = 0, limit: int = 1000) -> List[dict]:
     """
     Retrieve all shipment documents with optional pagination.
     """
@@ -76,11 +76,3 @@ async def delete_shipment(db, tracking_number: str) -> bool:
     """
     result = await db["shipments"].delete_one({"tracking_number": tracking_number})
     return result.deleted_count == 1
-
-async def get_all_shipments(db):
-    """
-    Fetch all shipment documents.
-    """
-    cursor = db["shipments"].find()
-    shipments = await cursor.to_list(length=1000)  # limit to 1000 for performance
-    return shipments

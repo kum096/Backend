@@ -85,5 +85,14 @@ class ShipmentOut(ShipmentBase):
     """
     id: str
 
+
     class Config:
-        orm_mode = True
+       orm_mode = True
+
+    class Config:
+         arbitrary_types_allowed = True
+    json_encoders = {
+        date: lambda v: v.isoformat(),
+        time: lambda v: v.isoformat(),
+    }
+    
