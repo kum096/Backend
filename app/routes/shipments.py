@@ -7,10 +7,26 @@ from app import crud, schemas
 from app.database import get_database
 from app.schemas import ShipmentStatusUpdate
 
+
+from typing import List
+from app.schemas import ShipmentOut
+
 router = APIRouter(
     prefix="/api/v1/shipments",
     tags=["Shipments"]
 )
+
+@router.get("/", response_model=List[ShipmentOut])
+async def get_all_shipments(db=Depends(get_database)):
+    """
+    Retrieve all shipments from the database.
+    """
+    try:
+        shipments = await crud.get_all_shipments(db)
+        return shipments
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching shipments: {str(e)}")
+
 
 
 @router.post("/", response_model=schemas.ShipmentOut, status_code=status.HTTP_201_CREATED)
