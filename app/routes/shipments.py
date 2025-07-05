@@ -1,12 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, status 
+from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Optional
 from bson import ObjectId
 from datetime import date, time
+
 from app import crud, schemas
-from app.database import get_database  # should return AsyncIOMotorDatabase instance
+from app.database import get_database
 from app.schemas import ShipmentStatusUpdate
 
-router = APIRouter(prefix="/api/v1/shipments", tags=["Shipments"])
+router = APIRouter(
+    prefix="/api/v1/shipments",
+    tags=["Shipments"]
+)
 
 
 @router.post("/", response_model=schemas.ShipmentOut, status_code=status.HTTP_201_CREATED)
@@ -21,7 +25,7 @@ async def create_shipment(
         new_shipment = await crud.create_shipment(db, shipment)
         return new_shipment
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=f"Creation failed: {str(e)}")
 
 
 @router.get("/{shipment_id}", response_model=schemas.ShipmentOut)
@@ -58,12 +62,11 @@ async def get_shipment_by_tracking(
 @router.put("/tracking/{tracking_number}", response_model=schemas.ShipmentOut)
 async def update_shipment_status(
     tracking_number: str,
-    status_update: schemas.ShipmentStatusUpdate,
+    status_update: ShipmentStatusUpdate,
     db=Depends(get_database)
 ):
     """
-    Update the shipment status and related fields.
-    Only fields provided in the request will be updated.
+    Update shipment status or tracking fields based on what's provided in request.
     """
     shipment = await crud.get_shipment_by_tracking_number(db, tracking_number)
     if not shipment:
@@ -71,7 +74,7 @@ async def update_shipment_status(
 
     update_data = {}
 
-    # Convert date/time and enum fields to strings for MongoDB
+    # Process provided fields
     for field in [
         "status",
         "latest_status_date",
@@ -85,21 +88,20 @@ async def update_shipment_status(
         if value is not None:
             if isinstance(value, (date, time)):
                 value = value.isoformat()
-            elif hasattr(value, "dict"):  # For nested Pydantic models like GeoLocation
+            elif hasattr(value, "dict"):
                 value = value.dict()
-            elif hasattr(value, "value"):  # For enums, get the underlying value
+            elif hasattr(value, "value"):
                 value = value.value
             update_data[field] = value
 
     if update_data:
         result = await db["shipments"].update_one(
             {"tracking_number": tracking_number},
-            {"$set": update_data},
+            {"$set": update_data}
         )
         if result.modified_count == 0:
             raise HTTPException(status_code=400, detail="Failed to update shipment")
 
-    # Fetch and return the updated shipment
     updated_shipment = await crud.get_shipment_by_tracking_number(db, tracking_number)
     return updated_shipment
 

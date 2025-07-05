@@ -1,6 +1,6 @@
 from fastapi import FastAPI
-from app.routes import shipments
 from fastapi.middleware.cors import CORSMiddleware
+from app.routes import shipments  # keep this
 
 app = FastAPI(
     title="TrackNest Logistics API",
@@ -11,11 +11,10 @@ app = FastAPI(
     openapi_url="/openapi.json",
 )
 
-# CORS setup — allow requests from your frontend origin(s)
 origins = [
-    "http://127.0.0.1:5500",  # if you serve your track.html locally with a dev server
+    "http://127.0.0.1:5500",
     "http://localhost:5500",
-    # add more origins as needed
+    "https://trcknestlogistics.vercel.app"
 ]
 
 app.add_middleware(
@@ -26,12 +25,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include your shipments router
 app.include_router(shipments.router)
 
 @app.get("/", tags=["Health Check"])
 async def health_check():
-    """
-    Simple health check endpoint.
-    """
     return {"status": "online", "message": "TrackNest Backend Running ✅"}

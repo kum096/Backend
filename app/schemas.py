@@ -1,7 +1,8 @@
-from pydantic import BaseModel, EmailStr, Field, constr, condecimal
+from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import date, time
 from enum import Enum
+
 
 class ShipmentStatus(str, Enum):
     pending = "pending"
@@ -9,14 +10,17 @@ class ShipmentStatus(str, Enum):
     delivered = "delivered"
     canceled = "canceled"
 
+
 class ShippingMode(str, Enum):
     air = "air"
     sea = "sea"
     land = "land"
 
+
 class GeoLocation(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+
 
 class ShipmentBase(BaseModel):
     tracking_number: str
@@ -48,27 +52,38 @@ class ShipmentBase(BaseModel):
     latest_status_date: Optional[date] = None
     latest_status_time: Optional[time] = None
     current_location: Optional[str] = None
-    current_location_coords: Optional[GeoLocation] = None   # New field
+    current_location_coords: Optional[GeoLocation] = None
 
     next_transit_port: Optional[str] = None
-    destination_coords: Optional[GeoLocation] = None        # New field for final destination
+    destination_coords: Optional[GeoLocation] = None
 
     status: Optional[ShipmentStatus] = None
 
+
 class ShipmentCreate(ShipmentBase):
+    """For creating a new shipment (no additional fields required)."""
     pass
 
+
 class ShipmentStatusUpdate(BaseModel):
+    """
+    Used to update tracking/status fields.
+    Only fields provided will be updated.
+    """
     status: Optional[ShipmentStatus] = None
     latest_status_date: Optional[date] = None
     latest_status_time: Optional[time] = None
     current_location: Optional[str] = None
-    current_location_coords: Optional[GeoLocation] = None  # Allow updating coords
+    current_location_coords: Optional[GeoLocation] = None
     next_transit_port: Optional[str] = None
-    destination_coords: Optional[GeoLocation] = None       # Allow updating destination coords
+    destination_coords: Optional[GeoLocation] = None
+
 
 class ShipmentOut(ShipmentBase):
-    id: str  # This is the string version of Mongo _id, converted in CRUD
+    """
+    Response schema including MongoDB ID.
+    """
+    id: str
 
     class Config:
         orm_mode = True

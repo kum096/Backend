@@ -1,20 +1,19 @@
 import os
-from motor.motor_asyncio import AsyncIOMotorClient
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from dotenv import load_dotenv
+from typing import Generator
 
-# Load environment variables
+# Load environment variables from .env
 load_dotenv()
 
-# MongoDB connection URI from your .env file (edit this there)
+# Load MongoDB connection settings
 MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-DB_NAME = os.getenv("MONGODB_DB_NAME", "tracknest_db")
+MONGODB_DB_NAME = os.getenv("MONGODB_DB_NAME", "tracknest_db")
 
-# Create MongoDB client
-client = AsyncIOMotorClient(MONGODB_URI)
+# Create the MongoDB client
+client: AsyncIOMotorClient = AsyncIOMotorClient(MONGODB_URI)
+database: AsyncIOMotorDatabase = client[MONGODB_DB_NAME]
 
-# Access database
-db = client[DB_NAME]
-
-# Dependency function for FastAPI routes
-def get_database():
-    return db
+# FastAPI dependency to get DB
+async def get_database() -> AsyncIOMotorDatabase:
+    return database
