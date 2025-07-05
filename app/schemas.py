@@ -2,6 +2,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import date, time
 from enum import Enum
+from typing import ClassVar
 
 
 class ShipmentStatus(str, Enum):
@@ -89,10 +90,16 @@ class ShipmentOut(ShipmentBase):
     class Config:
        orm_mode = True
 
-    class Config:
-         arbitrary_types_allowed = True
-    json_encoders = {
-        date: lambda v: v.isoformat(),
-        time: lambda v: v.isoformat(),
+   
+
+    class ShipmentOut(ShipmentBase):
+        id: str
+
+        model_config: ClassVar[dict] = {
+            "json_encoders": {
+                date: lambda v: v.isoformat(),
+                time: lambda v: v.isoformat(),
+        }
     }
+
     
