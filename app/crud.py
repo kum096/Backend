@@ -1,5 +1,6 @@
 from typing import Optional, List, Dict
 from bson import ObjectId
+from datetime import date, time
 from . import schemas
 
 
@@ -13,11 +14,25 @@ def obj_id_to_str(doc: Optional[dict]) -> Optional[dict]:
     return doc
 
 
+def serialize_dates_and_times(data: Dict) -> Dict:
+    """
+    Convert any date/time objects in the dict (including nested dicts) to ISO strings.
+    """
+    for key, value in data.items():
+        if isinstance(value, (date, time)):
+            data[key] = value.isoformat()
+        elif isinstance(value, dict):
+            # Recursively serialize nested dictionaries
+            data[key] = serialize_dates_and_times(value)
+    return data
+
+
 async def create_shipment(db, shipment_data: schemas.ShipmentCreate) -> dict:
     """
     Insert a new shipment document into the database.
     """
     shipment_dict = shipment_data.dict()
+    shipment_dict = serialize_dates_and_times(shipment_dict)
     result = await db["shipments"].insert_one(shipment_dict)
     new_shipment = await db["shipments"].find_one({"_id": result.inserted_id})
     return obj_id_to_str(new_shipment)
@@ -47,6 +62,8 @@ async def update_shipment(db, tracking_number: str, update_data: Dict) -> Option
     """
     if not update_data:
         return None
+
+    update_data = serialize_dates_and_times(update_data)
 
     result = await db["shipments"].update_one(
         {"tracking_number": tracking_number},
