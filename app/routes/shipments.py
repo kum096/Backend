@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status , Body
 from typing import Optional
 from bson import ObjectId
 from datetime import date, time
+from app.crud import serialize_dates_and_times
 
 from app import crud, schemas
 from app.database import get_database
@@ -134,3 +135,31 @@ async def delete_shipment(
     if not success:
         raise HTTPException(status_code=404, detail="Shipment not found")
     return None
+
+@router.put("/fullupdate/{tracking_number}", response_model=schemas.ShipmentOut)
+async def full_update_shipment(
+    tracking_number: str,
+    shipment_update: schemas.ShipmentCreate = Body(...),
+    db=Depends(get_database)
+):
+    """
+    Fully update a shipment by tracking number.
+    This replaces all fields provided in the shipment_update.
+    """
+    shipment = await crud.get_shipment_by_tracking_number(db, tracking_number)
+    if not shipment:
+        raise HTTPException(status_code=404, detail="Shipment not found")
+
+    update_data = shipment_update.dict(exclude_unset=True)
+    update_data = serialize_dates_and_times(update_data)
+
+    result = await db["shipments"].update_one(
+        {"tracking_number": tracking_number},
+        {"$set": update_data}
+    )
+
+    if result.modified_count == 0:
+        raise HTTPException(status_code=400, detail="Failed to update shipment")
+
+    updated_shipment = await crud.get_shipment_by_tracking_number(db, tracking_number)
+    return updated_shipment
